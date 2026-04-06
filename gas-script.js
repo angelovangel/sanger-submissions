@@ -28,18 +28,36 @@ function doPost(e) {
 
             // Get existing Infinity IDs to prevent duplicates (using mapped index)
             var infinityIdx = colIndexMap["Infinity"];
+            var receivedIdx = colIndexMap["Received"];
             var existingIds = {};
             if (destSheet.getLastRow() > 1 && infinityIdx !== undefined) {
-                var destData = destSheet.getRange(2, infinityIdx + 1, destSheet.getLastRow() - 1, 1).getValues();
+                var dataStartRow = 2;
+                var numRows = destSheet.getLastRow() - 1;
+                var destData = destSheet.getRange(dataStartRow, infinityIdx + 1, numRows, 1).getValues();
+                var receivedData = (receivedIdx !== undefined)
+                    ? destSheet.getRange(dataStartRow, receivedIdx + 1, numRows, 1).getValues()
+                    : null;
                 for (var j = 0; j < destData.length; j++) {
-                    existingIds[String(destData[j][0]).trim()] = true;
+                    var existingId = String(destData[j][0]).trim();
+                    if (existingId) {
+                        existingIds[existingId] = {
+                            row: dataStartRow + j,
+                            received: receivedData ? String(receivedData[j][0]).trim() : ""
+                        };
+                    }
                 }
             }
 
             payload.forEach(function (rowObj) {
                 var infId = String(rowObj['Infinity']).trim();
                 if (existingIds[infId]) {
-                    return; // Skip if already exists
+                    // Update Received if it was empty but now has a value
+                    var newReceived = rowObj['Received'] || "";
+                    if (newReceived && !existingIds[infId].received && receivedIdx !== undefined) {
+                        destSheet.getRange(existingIds[infId].row, receivedIdx + 1).setValue(newReceived);
+                        existingIds[infId].received = newReceived;
+                    }
+                    return; // Skip inserting a new row
                 }
 
                 var rawEmail = String(rowObj['User']).toLowerCase().trim();
@@ -54,6 +72,7 @@ function doPost(e) {
                 if (colIndexMap["Infinity"] !== undefined) rowData[0][colIndexMap["Infinity"]] = rowObj['Infinity'];
                 if (colIndexMap["User"] !== undefined) rowData[0][colIndexMap["User"]] = mappedUser;
                 if (colIndexMap["Reactions"] !== undefined) rowData[0][colIndexMap["Reactions"]] = rowObj['Reactions'];
+                if (colIndexMap["Received"] !== undefined) rowData[0][colIndexMap["Received"]] = rowObj['Received'] || "";
                 if (colIndexMap["Status"] !== undefined) rowData[0][colIndexMap["Status"]] = "New";
 
                 var targetRow = destSheet.getLastRow() + 1;
@@ -68,7 +87,7 @@ function doPost(e) {
                 targetRange.setValues(rowData);
                 
                 // Track internally per batch
-                existingIds[infId] = true;
+                existingIds[infId] = { row: targetRow, received: rowObj['Received'] || "" };
             });
         }
 

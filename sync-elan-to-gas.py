@@ -46,6 +46,23 @@ def fetch_data(token, url_template, days):
     response.raise_for_status()
     return response.json()
 
+def get_received_timestamp(item):
+    """Extract the StartDate of 'InProgress(Samples received)' status, converted to 24h format."""
+    statuses = item.get('Statuses', {})
+    status_list = statuses.get('Status', [])
+    if isinstance(status_list, dict):
+        status_list = [status_list]
+    for s in status_list:
+        if s.get('Name') == 'InProgress(Samples received)':
+            raw = s.get('StartDate', '')
+            if raw:
+                try:
+                    dt = datetime.datetime.strptime(raw, '%m/%d/%Y %I:%M:%S %p')
+                    return f"{dt.month}/{dt.day}/{dt.year} {dt.strftime('%H:%M:%S')}"
+                except Exception:
+                    return raw
+    return ''
+
 def filter_sanger(data):
     items = extract_list(data)
     if not items:
@@ -62,11 +79,12 @@ def filter_sanger(data):
             if not infinity_id:
                 # fallback to SampleSubmissionId
                 infinity_id = str(item.get('SampleSubmissionId', ''))[-5:]
-                
+
             filtered.append({
                 'Infinity': infinity_id,
                 'Reactions': item.get('NumberOfSamples', ''),
-                'User': item.get('User', '')
+                'User': item.get('User', ''),
+                'Received': get_received_timestamp(item)
             })
     return filtered
 
@@ -78,7 +96,7 @@ def send_to_gas(gas_url, payload):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Sync Sanger Sequencing data to Google Sheets")
-    parser.add_argument('--days', type=int, default=7, help='Number of days to go back')
+    parser.add_argument('--days', type=int, default=2, help='Number of days to go back')
     parser.add_argument('--gas-url', type=str, help='Google Apps Script Web App URL (overrides config.json)')
     parser.add_argument('--config', type=str, default='config.json', help='Path to config.json file')
     
