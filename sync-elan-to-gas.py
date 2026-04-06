@@ -47,20 +47,23 @@ def fetch_data(token, url_template, days):
     return response.json()
 
 def get_received_timestamp(item):
-    """Extract the StartDate of 'InProgress(Samples received)' status, converted to 24h format."""
-    statuses = item.get('Statuses', {})
-    status_list = statuses.get('Status', [])
-    if isinstance(status_list, dict):
-        status_list = [status_list]
-    for s in status_list:
-        if s.get('Name') == 'InProgress(Samples received)':
-            raw = s.get('StartDate', '')
-            if raw:
-                try:
-                    dt = datetime.datetime.strptime(raw, '%m/%d/%Y %I:%M:%S %p')
-                    return f"{dt.month}/{dt.day}/{dt.year} {dt.strftime('%H:%M:%S')}"
-                except Exception:
-                    return raw
+    """Extract the CreatedDate of 'Milestone : Samples received' from ActivityLogs, converted to 24h format."""
+    activity_logs = item.get('ActivityLogs', {})
+    log_list = activity_logs.get('ActivityLog', [])
+    if isinstance(log_list, dict):
+        log_list = [log_list]
+    
+    received_date = None
+    for log in log_list:
+        if log.get('Comments') == 'Milestone : Samples received':
+            received_date = log.get('CreatedDate', '')
+    
+    if received_date:
+        try:
+            dt = datetime.datetime.strptime(received_date, '%m/%d/%Y %I:%M:%S %p')
+            return f"{dt.month}/{dt.day}/{dt.year} {dt.strftime('%H:%M:%S')}"
+        except Exception:
+            return received_date
     return ''
 
 def filter_sanger(data):
