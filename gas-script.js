@@ -66,7 +66,7 @@ function doPost(e) {
 
                 // Build a row that matches current sheet structure
                 var rowData = [new Array(headers.length)];
-                
+
                 // Map values to their discovered columns!
                 if (colIndexMap["ID"] !== undefined) rowData[0][colIndexMap["ID"]] = randomId;
                 if (colIndexMap["Infinity"] !== undefined) rowData[0][colIndexMap["Infinity"]] = rowObj['Infinity'];
@@ -77,7 +77,7 @@ function doPost(e) {
 
                 var targetRow = destSheet.getLastRow() + 1;
                 var targetRange = destSheet.getRange(targetRow, 1, 1, headers.length);
-                
+
                 // Inherit format from the previous row
                 if (targetRow > 2) {
                     var prevRange = destSheet.getRange(targetRow - 1, 1, 1, headers.length);
@@ -85,7 +85,7 @@ function doPost(e) {
                 }
 
                 targetRange.setValues(rowData);
-                
+
                 // Track internally per batch
                 existingIds[infId] = { row: targetRow, received: rowObj['Received'] || "" };
             });

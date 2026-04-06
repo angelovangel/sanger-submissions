@@ -95,6 +95,8 @@ def send_to_gas(gas_url, payload):
     print("Send to GAS:", response.text)
 
 if __name__ == "__main__":
+    now = datetime.datetime.now()
+    print(f"[INFO]: Script start: {now.strftime('%Y-%m-%d %H:%M:%S')}")
     parser = argparse.ArgumentParser(description="Sync Sanger Sequencing data to Google Sheets")
     parser.add_argument('--days', type=int, default=2, help='Number of days to go back')
     parser.add_argument('--gas-url', type=str, help='Google Apps Script Web App URL (overrides config.json)')
@@ -111,21 +113,23 @@ if __name__ == "__main__":
         if not token or not elan_url:
             raise ValueError("Missing 'usertoken' or 'elan_url' in config file.")
 
-        print(f"Fetching data from IdeaElan for the last {args.days} days...")
+        print(f"[INFO]: Fetching data from IdeaElan for the last {args.days} days...")
         raw_data = fetch_data(token, elan_url, args.days)
         sanger_data = filter_sanger(raw_data)
-        print(f"Found {len(sanger_data)} records for Sanger Sequencing.")
+        print(f"[INFO]: Found {len(sanger_data)} records for Sanger Sequencing.")
         
         if sanger_data:
-            print("Successfully fetched data from IdeaElan:")
+            print("[INFO]: Successfully fetched data from IdeaElan:")
             print(json.dumps(sanger_data, indent=2))
             
             if gas_url:
-                print(f"Sending payload to Google Apps Script at {gas_url}...")
+                print(f"[INFO]: Sending payload to Google Apps Script at {gas_url}...")
                 send_to_gas(gas_url, sanger_data)
+                now = datetime.datetime.now()
+                print(f"[INFO]: Script end: {now.strftime('%Y-%m-%d %H:%M:%S')}")
             else:
-                print("Note: 'gas_url' not provided. Skipping upload to Google Sheets.")
+                print("[WARN]: 'gas_url' not provided. Skipping upload to Google Sheets.")
         else:
-            print("No records found, skipping upload.")
+            print("[WARN]: No records found, skipping upload.")
     except Exception as e:
-        print(f"Error occurred: {e}")
+        print(f"[ERROR]: {e}")
