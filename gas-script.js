@@ -74,6 +74,8 @@ function doPost(e) {
                 if (colIndexMap["Reactions"] !== undefined) rowData[0][colIndexMap["Reactions"]] = rowObj['Reactions'];
                 if (colIndexMap["Received"] !== undefined) rowData[0][colIndexMap["Received"]] = rowObj['Received'] || "";
                 if (colIndexMap["Status"] !== undefined) rowData[0][colIndexMap["Status"]] = "New";
+                if (colIndexMap["Primer"] !== undefined) rowData[0][colIndexMap["Primer"]] = "Premixed";
+                if (colIndexMap["Volume"] !== undefined) rowData[0][colIndexMap["Volume"]] = "2x";
 
                 var targetRow = destSheet.getLastRow() + 1;
                 var targetRange = destSheet.getRange(targetRow, 1, 1, headers.length);
